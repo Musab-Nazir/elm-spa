@@ -5,6 +5,7 @@ import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Url
+import Url.Parser as Parser exposing ((</>))
 
 
 
@@ -32,6 +33,23 @@ type alias Model =
   , url : Url.Url
   }
 
+-- All possible routes in the app
+
+type Route = 
+  Home String
+  | Profile Int
+  | Review String
+  | NotFound
+
+routeParser: Parser.Parser (Route -> a) a
+routeParser = 
+  Parser.oneOf
+  [
+    Parser.map Home (Parser.s "home" </> Parser.string)
+    , Parser.map Profile (Parser.s "profile" </> Parser.int)
+    , Parser.map Review    (Parser.s "reviews" </> Parser.string)
+  ]
+
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
@@ -53,6 +71,10 @@ update msg model =
     LinkClicked urlRequest ->
       case urlRequest of
         Browser.Internal url ->
+          let
+            parsedUrl = Parser.parse routeParser url
+            _ = Debug.log "parsed URL" parsedUrl
+          in
           ( model, Nav.pushUrl model.key (Url.toString url) )
 
         Browser.External href ->
@@ -79,14 +101,14 @@ subscriptions _ =
 
 view : Model -> Browser.Document Msg
 view model =
-  { title = "URL Interceptor"
+  { title = "Elm SPA"
   , body =
       [ text "The current URL is: "
       , b [] [ text (Url.toString model.url) ]
       , ul []
           [ viewLink "/home"
-          , viewLink "/profile"
-          , viewLink "/reviews/the-century-of-the-self"
+          , viewLink "/home/peter-parker"
+          , viewLink "/profile/42"
           , viewLink "/reviews/public-opinion"
           , viewLink "/reviews/shah-of-shahs"
           ]
